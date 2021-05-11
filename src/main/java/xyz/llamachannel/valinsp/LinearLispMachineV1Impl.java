@@ -38,6 +38,9 @@ public class LinearLispMachineV1Impl<I> implements LinearLispMachineV1<I> {
   @Override
   public void swapFirst(I reg1, I reg2) {
     validateRegisterPair(reg1, reg2, "swapFirst");
+    if (reg1 == reg2) {
+      throw new RuntimeException("swapFirst: Registers must be distinct.");
+    }
     if (this.registers.get(reg2) instanceof LLMPair pair) {
       LLMValue temp = this.registers.get(reg1);
       this.registers.put(reg1, pair.val2);
@@ -50,6 +53,9 @@ public class LinearLispMachineV1Impl<I> implements LinearLispMachineV1<I> {
   @Override
   public void swapSecond(I reg1, I reg2) {
     validateRegisterPair(reg1, reg2, "swapSecond");
+    if (reg1 == reg2) {
+      throw new RuntimeException("swapSecond: Registers must be distinct.");
+    }
     if (this.registers.get(reg2) instanceof LLMPair pair) {
       LLMValue temp = this.registers.get(reg1);
       this.registers.put(reg1, pair.val1);
@@ -78,7 +84,7 @@ public class LinearLispMachineV1Impl<I> implements LinearLispMachineV1<I> {
   @Override
   public boolean eq(I reg1, I reg2) {
     validateRegisterPair(reg1, reg2, "eq");
-    if (reg1 instanceof LLMPair || reg2 instanceof LLMPair) {
+    if (!isAtom(reg1) || !isAtom(reg2)) {
       throw new RuntimeException("eq: Only atomic-valued registers can be compared.");
     }
     // both are null, or both are same symbol
@@ -97,7 +103,7 @@ public class LinearLispMachineV1Impl<I> implements LinearLispMachineV1<I> {
     if (symbol == null) {
       throw new NullPointerException("assignSymbol: symbol cannot be null.");
     }
-    if (this.registers.get(reg) instanceof LLMPair) {
+    if (isAtom(reg)) {
       throw new RuntimeException("assignSymbol: Can only assign to atomic-valued registers.");
     }
     this.registers.put(reg, symbol);
@@ -111,7 +117,7 @@ public class LinearLispMachineV1Impl<I> implements LinearLispMachineV1<I> {
     if (!this.registers.containsKey(reg)) {
       throw new RuntimeException("assignNull: Cannot find register.");
     }
-    if (this.registers.get(reg) instanceof LLMPair) {
+    if (!isAtom(reg)) {
       throw new RuntimeException("assignNull: Can only assign to atomic-valued registers.");
     }
     this.registers.put(reg, theNull);
@@ -123,10 +129,32 @@ public class LinearLispMachineV1Impl<I> implements LinearLispMachineV1<I> {
   @Override
   public void assignRegister(I reg1, I reg2){
     validateRegisterPair(reg1, reg2, "assignRegister");
-    if (reg1 instanceof LLMPair || reg2 instanceof LLMPair) {
+    if (!isAtom(reg1) || !isAtom(reg2)) {
       throw new RuntimeException("assignRegister: Only atomic-valued registers can participate in assignment.");
     }
     this.registers.put(reg1, this.registers.get(reg2));
+  }
+
+  // TODO: Baker shows how to implement cons in terms of the swap primitives
+  // and a free list
+  @Override
+  public void cons(I reg1, I reg2) {
+    validateRegisterPair(reg1, reg2, "cons");
+    var newPair = new LLMPair(this.registers.get(reg1), this.registers.get(reg2));
+    this.registers.put(reg1, theNull);
+    this.registers.put(reg2, newPair);
+  }
+
+  // TODO
+  @Override
+  public void pop(I reg1, I reg2) {
+    validateRegisterPair(reg1, reg2, "pop");
+    if (!isNull(reg1) || isAtom(reg2)) {
+      throw new RuntimeException("pop: First register must be null, the second register must be non-atomic.");
+    }
+    LLMPair pair = (LLMPair) this.registers.get(reg2);
+    this.registers.put(reg1, pair.val1);
+    this.registers.put(reg2, pair.val2);
   }
 
 }

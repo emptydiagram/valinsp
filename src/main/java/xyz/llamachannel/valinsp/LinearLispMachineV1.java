@@ -67,9 +67,16 @@ public interface LinearLispMachineV1<I> {
    */
   void assignRegister(I reg1, I reg2);
 
+  void cons(I reg1, I reg2);
+
+  void pop(I reg1, I reg2);
 
   default boolean isSymbol(I reg) {
     return isAtom(reg) && !isNull(reg);
+  }
+
+  default void push(I reg1, I reg2) {
+    cons(reg1, reg2);
   }
 
 }
